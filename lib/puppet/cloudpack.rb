@@ -447,6 +447,7 @@ module Puppet::CloudPack
         :image_id   => options[:image],
         :key_name   => options[:keyname],
         :groups     => options[:group],
+        :tags       => options[:tags],
         :flavor_id  => options[:type]
       )
 
@@ -517,6 +518,7 @@ module Puppet::CloudPack
           "state"      => s.state,
           "dns_name"   => s.dns_name,
           "created_at" => s.created_at,
+          "tags"       => s.tags,
         }
       end
       hsh

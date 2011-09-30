@@ -134,6 +134,37 @@ automated answers file.
 Enterprise 1.1 from Puppet Labs.  This may be much faster than the
 puppet-enterprise script if you have limited upload bandwidth.
 
+Puppet Manifests
+================
+
+With your EC2 credentials placed in ~/.fog on your system, you may launch or
+terminate instances with this module installed using Puppet manifests.
+Instances are identified by their "Name" tag, and because Amazon EC2 allows
+more than one instance to have the same Name tag, instances will not be
+identified uniquely by the "Name" tag. Currently, only Amazon EC2 is supported.
+
+Example:
+
+    cloudnode {
+        "http123.example.net":
+            ensure => present,
+            platform => "AWS",
+            region => "eu-west-1",
+            image => "ami-9289bae6",
+            type => "m1.small",
+            group => "web",
+            keypair => "my_key";
+            
+            "mongrel456.example.net":
+                ensure => absent,
+                platform => "AWS",
+                region => "eu-west-1",
+                image => "ami-9289bae6",
+                type => "m1.small",
+                group => "appserver",
+                keypair => "my_key";
+    }
+
 Building the Module
 ===================
 
