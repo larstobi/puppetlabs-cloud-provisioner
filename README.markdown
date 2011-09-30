@@ -155,14 +155,14 @@ Example:
             group => "web",
             keypair => "my_key";
             
-            "mongrel456.example.net":
-                ensure => absent,
-                platform => "AWS",
-                region => "eu-west-1",
-                image => "ami-9289bae6",
-                type => "m1.small",
-                group => "appserver",
-                keypair => "my_key";
+        "mongrel456.example.net":
+            ensure => absent,
+            platform => "AWS",
+            region => "eu-west-1",
+            image => "ami-9289bae6",
+            type => "m1.small",
+            group => "appserver",
+            keypair => "my_key";
     }
 
 Building the Module
