@@ -24,7 +24,7 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
         when nil
             false
         when 1
-            dns_name = list.first["dns_name"]
+            dns_name = list.first[1]["dns_name"]
             self.debug "#destroy: #{dns_name}"
             # SERVER: "ec2-11-222-33-44.eu-west-1.compute.amazonaws.com"
             # OPTIONS: {:region=>"eu-west-1"}
