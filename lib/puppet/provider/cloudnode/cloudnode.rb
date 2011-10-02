@@ -55,7 +55,7 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
                 if status_key == "tags"
                     status_value.each do |tag_key,tag_value|
                         if tag_key == "Name"
-                            # EC2 states: pending, running, stopping, stopped, terminated
+                            # EC2 states: pending, running, shutting-down, stopping, stopped, terminated
                             if @resource[:name] == tag_value and
                                 status["state"] != "terminated"
                                 return status["dns_name"]
