@@ -28,7 +28,7 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
             self.debug "#destroy: #{dns_name}"
             # SERVER: "ec2-11-222-33-44.eu-west-1.compute.amazonaws.com"
             # OPTIONS: {:region=>"eu-west-1"}
-            Puppet::CloudPack.terminate(dns_name, {})
+            Puppet::CloudPack.terminate(dns_name, {:region => "eu-west-1"})
         else
             raise Puppet::Error, "Ambiguous argument. Duplicate Name tags found: #{list.inspect}"
         end
