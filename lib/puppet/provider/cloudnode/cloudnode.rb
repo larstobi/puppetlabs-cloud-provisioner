@@ -19,53 +19,38 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
     end
 
     def destroy
-        options = {:region => @resource[:region]}
-        dns_name = dns_name_by_name_tag
-        self.debug "#destroy: #{dns_name}"
-        # SERVER: "ec2-11-222-33-44.eu-west-1.compute.amazonaws.com"
-        # OPTIONS: {:region=>"eu-west-1"}
-        Puppet::CloudPack.terminate(dns_name, options)
+        list = find_all_by_name(Puppet::CloudPack.list({:region => @resource[:region]}))
+        case list.length
+        when nil
+            false
+        when 1
+            dns_name = list.first["dns_name"]
+            self.debug "#destroy: #{dns_name}"
+            # SERVER: "ec2-11-222-33-44.eu-west-1.compute.amazonaws.com"
+            # OPTIONS: {:region=>"eu-west-1"}
+            Puppet::CloudPack.terminate(dns_name, {})
+        else
+            raise Puppet::Error, "Ambiguous argument. Duplicate Name tags found: #{list.inspect}"
+        end
     end
 
     def exists?
-        options = {:region => @resource[:region]}
-        list = Puppet::CloudPack.list(options)
-        match = false
-        # TODO: This is too deeply nested to be pretty.
-        list.each do |id, status|
-            status.each do |key,value|
-                if key == "tags"
-                    value.each do |key,value|
-                        if key == "Name" and status["state"] != "terminated"
-                            match = true if @resource[:name] == value
-                        end
-                    end
-                end
-            end
+        list = find_all_by_name(Puppet::CloudPack.list({:region => @resource[:region]}))
+        case list.length
+        when nil
+            false
+        when 1
+            true
+        else
+            self.warning("Duplicate Name tags found!")
+            true
         end
-        match
     end
 
-    def dns_name_by_name_tag
-        options = {:region => @resource[:region]}
-        list = Puppet::CloudPack.list(options)
-
-        list.each do |id, status|
-            status.each do |status_key,status_value|
-                if status_key == "tags"
-                    status_value.each do |tag_key,tag_value|
-                        if tag_key == "Name"
-                            # EC2 states: pending, running, shutting-down, stopping, stopped, terminated
-                            if @resource[:name] == tag_value and
-                                status["state"] != "terminated"
-                                return status["dns_name"]
-                            end
-                        end
-                    end
-                end
-
-            end
+    def find_all_by_name list
+        list.find_all do |id, status|
+            # EC2 states: pending, running, shutting-down, stopping, stopped, terminated
+            status["state"] != "terminated" and status["tags"]["Name"] == @resource[:name]
         end
-        nil
     end
 end
