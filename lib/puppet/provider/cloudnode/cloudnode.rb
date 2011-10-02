@@ -37,7 +37,7 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
     def exists?
         list = find_all_by_name(Puppet::CloudPack.list({:region => @resource[:region]}))
         case list.length
-        when nil
+        when 0
             false
         when 1
             true
