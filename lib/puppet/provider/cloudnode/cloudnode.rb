@@ -27,7 +27,7 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
             :image => @resource[:image],
             :type => @resource[:type],
             :group => [@resource[:group]],
-            :keypair => @resource[:keypair],
+            :keyname => @resource[:keypair],
             :monitoring => @resource[:monitoring],
             :tags => tags
         }
