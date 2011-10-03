@@ -2,6 +2,22 @@ require 'puppet/cloudpack'
 Puppet::Type.type(:cloudnode).provide(:cloudnode) do
     desc "Puppet CloudPack provider."
 
+    # def manager
+    #     self.class.manager
+    # end
+    # 
+    # def self.prefetch(resources)
+    #     resources.each do |name, resource|
+    #         puts resource.inspect
+    #         # result[:ensure] = :present
+    #         # puts result.inspect
+    #         # resource.provider = new(result)
+    #     end
+    # 
+    # 
+    # 
+    # end
+
     def create
         resource_tags = @resource[:tags]
         name_tag = {"Name" => @resource[:name]}
@@ -9,6 +25,7 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
         options = {
             :region => @resource[:region],
             :image => @resource[:image],
+            :type => @resource[:type],
             :group => [@resource[:group]],
             :keypair => @resource[:keypair],
             :monitoring => @resource[:monitoring],
