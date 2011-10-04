@@ -3,20 +3,20 @@ Puppet::Type.newtype(:cloudnode) do
     ensurable
 
     newparam(:name) do
-        desc "The node name. Corresponds to i.e. the Name tag on Amazon EC2."
+        desc "The node name. Stored in a tag on Amazon EC2."
         isnamevar
     end
 
     newparam(:platform) do
-        desc "Cloud provider."
+        desc "Cloud provider. For example AWS."
     end
 
     newparam(:type) do
-        desc "The instance type. Corresponds to i.e.e m1.small on Amazon EC2."
+        desc "The instance type. For example m1.small on Amazon EC2."
     end
 
     newparam(:region) do
-        desc "The region to look for the node."
+        desc "The region for the instance. For example us-east-1 or eu-west-1"
     end
 
     newparam(:image) do
