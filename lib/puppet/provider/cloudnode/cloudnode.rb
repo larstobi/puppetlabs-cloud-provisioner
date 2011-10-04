@@ -50,8 +50,16 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
             resource[:region]
         end.uniq
 
+        duplicates = {}
         instances.each do |instance|
             next if instance.nil?
+
+            if duplicates[instance.name]
+                raise Puppet::Error, "Duplicate name tags for #{instance.name}"
+            else
+                duplicates[instance.name] = true
+            end
+
             if resource = resources[instance.name]
                 resource.provider = instance
             end
