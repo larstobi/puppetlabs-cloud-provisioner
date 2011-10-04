@@ -1,6 +1,7 @@
 require 'puppet/cloudpack'
 Puppet::Type.type(:cloudnode).provide(:cloudnode) do
     desc "Puppet CloudPack provider."
+    mk_resource_methods
 
     def create
         resource_tags = @resource[:tags]
@@ -20,36 +21,47 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
     end
 
     def destroy
-        list = find_all_by_name(Puppet::CloudPack.list({:region => @resource[:region]}))
-        case list.length
-        when nil
-            false
-        when 1
-            dns_name = list.first[1]["dns_name"]
-            self.debug "#destroy: #{dns_name}"
-            Puppet::CloudPack.terminate(dns_name, {:region => @resource[:region]})
-        else
-            raise Puppet::Error, "Ambiguous argument. Duplicate Name tags found: #{list.inspect}"
-        end
+        self.debug "#destroy: #{properties[:dns_name]}"
+        Puppet::CloudPack.terminate(properties[:dns_name], {:region => @resource[:region]})
     end
 
     def exists?
-        list = find_all_by_name(Puppet::CloudPack.list({:region => @resource[:region]}))
-        case list.length
-        when 0
-            false
-        when 1
-            true
-        else
-            self.warning("Duplicate Name tags found!")
-            true
+        properties[:ensure] != :absent
+    end
+
+    def self.instances
+        @regions.collect do |region|
+            Puppet::CloudPack.list_detailed({:region => region}).collect do |id, instance|
+                next if instance["tags"]["Name"].nil?
+                next if instance["state"] == "terminated"
+
+                new(:name => instance["tags"]["Name"],
+                :id => instance["id"],
+                :dns_name => instance["dns_name"],
+                :availability_zone => instance["availability_zone"],
+                :region => region,
+                :ensure => :present)
+            end
+        end.flatten
+    end
+
+    def self.prefetch(resources)
+        @regions = resources.collect do |name, resource|
+            resource[:region]
+        end.uniq
+
+        instances.each do |instance|
+            next if instance.nil?
+            if resource = resources[instance.name]
+                resource.provider = instance
+            end
         end
     end
 
-    def find_all_by_name list
-        list.find_all do |id, status|
-            # EC2 states: pending, running, shutting-down, stopping, stopped, terminated
-            status["state"] != "terminated" and status["tags"]["Name"] == @resource[:name]
+    def properties
+        if @property_hash.empty?
+            @property_hash = {:ensure => :absent}
         end
+        @property_hash
     end
 end

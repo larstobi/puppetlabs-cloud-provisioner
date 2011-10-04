@@ -524,6 +524,26 @@ module Puppet::CloudPack
       hsh
     end
 
+    def list_detailed(options)
+      options = merge_default_options(options)
+      connection = create_connection(options)
+      servers = connection.servers
+      # Convert the Fog object into a simple hash.
+      # And return the array to the Faces API for rendering
+      hash = {}
+      servers.each do |server|
+        hash[server.id] = {
+          "id"                => server.id,
+          "state"             => server.state,
+          "dns_name"          => server.dns_name,
+          "created_at"        => server.created_at,
+          "tags"              => server.tags,
+          "availability_zone" => server.availability_zone,
+        }
+      end
+      hash
+    end
+
     def fingerprint(server, options)
       options = merge_default_options(options)
       connection = create_connection(options)
