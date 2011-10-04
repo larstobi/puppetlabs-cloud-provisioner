@@ -519,7 +519,6 @@ module Puppet::CloudPack
           "state"      => s.state,
           "dns_name"   => s.dns_name,
           "created_at" => s.created_at,
-          "tags"       => s.tags,
         }
       end
       hsh
