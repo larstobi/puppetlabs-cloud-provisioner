@@ -141,7 +141,8 @@ With your EC2 credentials placed in ~/.fog on your system, you may launch or
 terminate instances with this module installed using Puppet manifests.
 Instances are identified by their "Name" tag, and because Amazon EC2 allows
 more than one instance to have the same Name tag, instances will not be
-identified uniquely by the "Name" tag. Currently, only Amazon EC2 is supported.
+identified uniquely by the "Name" tag. The provider will throw an error if
+there are duplicate Name tags. Currently, only Amazon EC2 is supported.
 
 Example:
 
