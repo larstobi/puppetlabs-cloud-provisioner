@@ -2,10 +2,11 @@ require 'puppet/cloudpack'
 Puppet::Type.type(:cloudnode).provide(:cloudnode) do
     desc "Puppet CloudPack provider."
     mk_resource_methods
+    PUPPET_ID = "Puppet-ID"
 
     def create
         resource_tags = @resource[:tags]
-        name_tag = {"Name" => @resource[:name]}
+        name_tag = {PUPPET_ID => @resource[:name]}
         tags = resource_tags.merge(name_tag)
         options = {
             :region => @resource[:region],
@@ -32,10 +33,10 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
     def self.instances
         @regions.collect do |region|
             Puppet::CloudPack.list_detailed({:region => region}).collect do |id, instance|
-                next if instance["tags"]["Name"].nil?
+                next if instance["tags"][PUPPET_ID].nil?
                 next if instance["state"] == "terminated"
 
-                new(:name => instance["tags"]["Name"],
+                new(:name => instance["tags"][PUPPET_ID],
                 :id => instance["id"],
                 :dns_name => instance["dns_name"],
                 :availability_zone => instance["availability_zone"],
