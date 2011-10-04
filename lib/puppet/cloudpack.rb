@@ -448,6 +448,7 @@ module Puppet::CloudPack
         :key_name   => options[:keyname],
         :groups     => options[:group],
         :tags       => options[:tags],
+        :monitoring => options[:monitoring],
         :flavor_id  => options[:type]
       )
 
