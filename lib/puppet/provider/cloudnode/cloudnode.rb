@@ -21,7 +21,7 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
     end
 
     def destroy
-        self.debug "#destroy: #{properties[:dns_name]}"
+        self.debug "#destroy: #{properties.inspect}"
         Puppet::CloudPack.terminate(properties[:dns_name], {:region => @resource[:region]})
     end
 
