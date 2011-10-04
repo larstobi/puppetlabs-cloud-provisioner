@@ -5,9 +5,6 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
     PUPPET_ID = "Puppet-ID"
 
     def create
-        resource_tags = @resource[:tags]
-        name_tag = {PUPPET_ID => @resource[:name]}
-        tags = resource_tags.merge(name_tag)
         options = {
             :region => @resource[:region],
             :image => @resource[:image],
@@ -15,10 +12,16 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
             :group => [@resource[:group]],
             :keyname => @resource[:keypair],
             :monitoring => @resource[:monitoring],
-            :tags => tags
+            :tags => create_tags(@resource[:tags])
         }
         self.debug "#create parameters: #{options.inspect}"
         Puppet::CloudPack.create(options)
+    end
+
+    def create_tags resource_tags
+        tags = {PUPPET_ID => @resource[:name]}
+        tags["Name"] = @resource[:name] # Convenience for AWS Web Console.
+        tags.merge(resource_tags) # Overwrites Name tag from resource_tags if defined.
     end
 
     def destroy
