@@ -342,6 +342,30 @@ module Puppet::CloudPack
     end
 
     def add_classify_options(action)
+      action.option '--enc-server=' do
+        summary 'The External Node Classifier URL.'
+        description <<-EOT
+          The URL of the External Node Classifier.
+          This currently only supports the Dashboard
+          as an external node classifier.
+        EOT
+        default_to do
+          Puppet[:server]
+        end
+      end
+
+      action.option '--enc-port=' do
+        summary 'The External Node Classifier Port'
+        description <<-EOT
+          The port of the External Node Classifier.
+          This currently only supports the Dashboard
+          as an external node classifier.
+        EOT
+        default_to do
+          3000
+        end
+      end
+
       action.option '--node-group=', '--as=' do
         summary 'The Puppet Dashboard node group to add to.'
       end
@@ -362,15 +386,15 @@ module Puppet::CloudPack
     end
 
     def dashboard_classify(certname, options)
-      Puppet.info "Using http://#{Puppet[:report_server]}:#{Puppet[:report_port]} as Dashboard."
-      http = Puppet::Network::HttpPool.http_instance(Puppet[:report_server], Puppet[:report_port])
+      Puppet.info "Using http://#{options[:enc_server]}:#{options[:enc_port]} as Dashboard."
+      http = Puppet::Network::HttpPool.http_instance(options[:enc_server], options[:enc_port])
 
       # Workaround for the fact that Dashboard is typically insecure.
       http.use_ssl = false
       headers = { 'Content-Type' => 'application/json' }
 
       begin
-        Puppet.notice 'Registering node ...'
+        Puppet.notice "Registering node: #{certname} ..."
         # get the list of nodes that have been specified in the Dashboard
         response = http.get('/nodes.json', headers )
         nodes = handle_json_response(response, 'List nodes')
@@ -382,7 +406,7 @@ module Puppet::CloudPack
           # create the node if it does not exist
           data = { 'node' => { 'name' => certname } }
           response = http.post('/nodes.json', data.to_pson, headers)
-          handle_json_response(response, 'Registering node', '201').first
+          handle_json_response(response, 'Registering node', '201')
         end
         node_id = node_info['id']
 
@@ -409,8 +433,8 @@ module Puppet::CloudPack
         end
       rescue Errno::ECONNREFUSED
         Puppet.warning 'Registering node ... Error'
-        Puppet.err "Could not connect to host http://#{Puppet[:report_server]}:#{Puppet[:report_port]}"
-        Puppet.err "Check your report_server and report_port options"
+        Puppet.err "Could not connect to host http://#{options[:enc_server]}:#{options[:enc_port]}"
+        Puppet.err "Check your --enc_server and --enc_port options"
         exit(1)
       end
 
@@ -585,7 +609,8 @@ module Puppet::CloudPack
     end
 
     def init(server, options)
-      certname = install(server, options)
+      install_status = install(server, options)
+      certname = install_status['puppetagent_certname']
       options.delete(:_destroy_server_at_exit)
 
       Puppet.notice "Puppet is now installed on: #{server}"
@@ -593,13 +618,13 @@ module Puppet::CloudPack
       classify(certname, options)
 
       # HACK: This should be reconciled with the Certificate Face.
-      opts = options.merge(:ca_location => :remote)
+      cert_options = {:ca_location => :remote}
 
       # TODO: Wait for C.S.R.?
 
       Puppet.notice "Signing certificate ..."
       begin
-        Puppet::Face[:certificate, '0.0.1'].sign(certname, opts)
+        Puppet::Face[:certificate, '0.0.1'].sign(certname, cert_options)
         Puppet.notice "Signing certificate ... Done"
       rescue Puppet::Error => e
         # TODO: Write useful next steps.
@@ -656,7 +681,8 @@ module Puppet::CloudPack
 
       # Determine the certificate name as reported by the remote system.
       certname_command = "#{cmd_prefix}puppet agent --configprint certname"
-      results = ssh_remote_execute(server, options[:login], certname_command)
+      results = ssh_remote_execute(server, options[:login], certname_command, options[:keyfile])
+
       if results[:exit_code] == 0 then
         puppetagent_certname = results[:stdout].strip
       else
@@ -686,33 +712,38 @@ module Puppet::CloudPack
       # if the end user specifies --keyfile=agent
       ssh_opts = keyfile ? { :keys => [ keyfile ] } : { }
       # Start
-      Net::SSH.start(server, login, ssh_opts) do |session|
-        session.open_channel do |channel|
-          channel.on_data do |ch, data|
-            buffer << data
-            stdout << data
-            if buffer =~ /\n/
-              lines = buffer.split("\n")
-              buffer = lines.length > 1 ? lines.pop : String.new
-              lines.each do |line|
-                Puppet.debug(line)
+      begin
+        Net::SSH.start(server, login, ssh_opts) do |session|
+          session.open_channel do |channel|
+            channel.on_data do |ch, data|
+              buffer << data
+              stdout << data
+              if buffer =~ /\n/
+                lines = buffer.split("\n")
+                buffer = lines.length > 1 ? lines.pop : String.new
+                lines.each do |line|
+                  Puppet.debug(line)
+                end
               end
             end
-          end
-          channel.on_eof do |ch|
-            # Display anything remaining in the buffer
-            unless buffer.empty?
-              Puppet.debug(buffer)
+            channel.on_eof do |ch|
+              # Display anything remaining in the buffer
+              unless buffer.empty?
+                Puppet.debug(buffer)
+              end
             end
+            channel.on_request("exit-status") do |ch, data|
+              exit_code = data.read_long
+              Puppet.debug("SSH Command Exit Code: #{exit_code}")
+            end
+            # Finally execute the command
+            channel.exec(command)
           end
-          channel.on_request("exit-status") do |ch, data|
-            exit_code = data.read_long
-            Puppet.debug("SSH Command Exit Code: #{exit_code}")
-          end
-          # Finally execute the command
-          channel.exec(command)
         end
+      rescue Net::SSH::AuthenticationFailed => user
+        raise Puppet::Error, "Authentication failure for user #{user}. Please check the keyfile and try again."
       end
+
       Puppet.info "Executing remote command ... Done"
       { :exit_code => exit_code, :stdout => stdout }
     end
@@ -745,6 +776,7 @@ module Puppet::CloudPack
         else
           Puppet.info "Failed to connect with issue #{e} (Retry #{retries})"
           Puppet.info "This may be because the machine is booting.  Retrying the connection..."
+          retry
         end
       rescue Errno::ECONNRESET => e
         if (retries += 1) > 10
