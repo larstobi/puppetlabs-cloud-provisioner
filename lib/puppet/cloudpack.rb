@@ -568,6 +568,16 @@ module Puppet::CloudPack
       hash
     end
 
+    def list_addresses(options)
+        options = merge_default_options(options)
+        connection = create_connection(options)
+        result = connection.describe_addresses
+        unless result.status == 200
+            raise Puppet::Error, "Request Elastic IP addresses failed: #{result.status}"
+        end
+        result.body["addressesSet"]
+    end
+
     def fingerprint(server, options)
       options = merge_default_options(options)
       connection = create_connection(options)
