@@ -1,23 +1,16 @@
 require 'spec_helper'
+require 'puppet/cloudpack'
 
-describe Puppet::Type.newtype(:cloudnode) do
+describe Puppet::Type.type(:cloudnode) do
     before do
-        @class = Puppet::Type.type(:cloudnode)
+        @node = Puppet::Type.type(:cloudnode).new(:name => "testnode")
+    end
 
-        # Init a fake provider
-        @provider_class = stub 'provider_class', :ancestors => [], :name => 'fake',
-        :suitable? => true, :supports_parameter? => true
-        @class.stubs(:defaultprovider).returns @provider_class
-        @class.stubs(:provider).returns @provider_class
-
-        @provider = stub 'provider', :class => @provider_class, :clean => nil
-        @provider.stubs(:is_a?).returns false
-        @provider_class.stubs(:new).returns @provider
-
-        @cloudnode = @class.new(:name => "foo")
+    it "should set the node name" do
+        @node.name.should == "testnode"
     end
 
     it "should have :name be its namevar" do
-        @class.key_attributes.should == [:name]
+        @node.name_var.should == :name
     end
 end
