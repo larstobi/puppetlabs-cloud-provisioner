@@ -5,6 +5,12 @@ Puppet::Type.newtype(:cloudnode) do
     newparam(:name) do
         desc "The node name. Stored in a tag on Amazon EC2."
         isnamevar
+
+        validate do |value|
+            if value.nil?
+                raise ArgumentError, "%s must not be nil" % value
+            end
+        end
     end
 
     newparam(:platform) do
@@ -31,14 +37,10 @@ Puppet::Type.newtype(:cloudnode) do
         desc "The name of the key pair."
     end
 
-    newparam(:monitoring) do
+    newparam(:monitoring, :boolean => true) do
         desc "Use monitoring for the instance."
-
-        validate do |value|
-            unless value == "true" or value == "false"
-                raise ArgumentError, "%s must be true or false" % value
-            end
-        end
+        newvalues(:true, :false)
+        defaultto :false
     end
 
     newparam(:username) do
