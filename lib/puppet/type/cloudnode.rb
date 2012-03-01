@@ -1,6 +1,54 @@
 Puppet::Type.newtype(:cloudnode) do
     @doc = "Manage cloud nodes."
-    ensurable
+
+    ensurable do
+        desc "What state the node should be in."
+
+        newvalue(:present) do
+            provider.create
+        end
+
+        newvalue(:absent) do
+            provider.destroy
+        end
+
+        newvalue(:running) do
+            provider.start
+        end
+
+        newvalue(:stopped) do
+            provider.stop
+        end
+
+        # Possible EC2 states:
+        # http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-ItemType-InstanceStateType.html?r=9564
+        # states = %w( pending running shutting-down terminated stopping stopped )
+        def insync?(is)
+            # an empty array is analogous to no should values
+            return true if @should.empty?
+
+            # only support a single should
+            should = @should.first
+            # use Symbol to match should
+            is = "shuttingdown" if is == "shutting-down"
+            is = is.to_sym
+            stop_state = [:stopped, :stopping, :shuttingdown]
+
+            case should
+            when :present
+                return is != :terminated
+            when :running
+                return stop_state.include?(is) ? false : true
+            when :stopped
+                return stop_state.include?(is) ? true : false
+            end
+            false
+        end
+
+        def retrieve
+            current = provider.properties[:ensure]
+        end
+    end
 
     newparam(:name) do
         desc "The node name. Stored in a tag on Amazon EC2."

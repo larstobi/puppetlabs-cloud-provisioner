@@ -80,8 +80,16 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
         Puppet::CloudPack.terminate(properties[:dns_name], {:region => @resource[:region]})
     end
 
-    def exists?
-        properties[:ensure] != :absent
+    def start
+        self.debug "#start: #{properties[:name]} (#{properties[:id]})"
+        Puppet::CloudPack.start(properties[:id], {:platform => 'AWS', :region => @resource[:region]})
+        true
+    end
+
+    def stop
+        self.debug "#stop: #{properties[:name]} (#{properties[:id]})"
+        Puppet::CloudPack.stop(properties[:id], {:platform => 'AWS', :region => @resource[:region]})
+        true
     end
 
     def self.instances
@@ -94,7 +102,7 @@ Puppet::Type.type(:cloudnode).provide(:cloudnode) do
                 :dns_name => instance["dns_name"],
                 :availability_zone => instance["availability_zone"],
                 :region => region,
-                :ensure => :present)
+                :ensure => instance['state'])
             end
         end.flatten
     end

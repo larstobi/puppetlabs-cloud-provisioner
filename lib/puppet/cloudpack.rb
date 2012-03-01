@@ -905,6 +905,28 @@ module Puppet::CloudPack
       return nil
     end
 
+    def start(instance_id, options = {})
+      Puppet.info "Connecting to #{options.inspect} ..."
+      connection = create_connection(options)
+      Puppet.info "Connecting to #{options.inspect} ... Done"
+
+      Puppet.notice "Starting #{instance_id} ..."
+      result = connection.start_instances(instance_id)
+      Puppet.notice "Starting #{instance_id} ... Done"
+      return result
+    end
+
+    def stop(instance_id, options = {})
+      Puppet.info "Connecting to #{options.inspect} ..."
+      connection = create_connection(options)
+      Puppet.info "Connecting to #{options.inspect} ... Done"
+
+      Puppet.notice "Stopping #{instance_id} ..."
+      result = connection.stop_instances(instance_id)
+      Puppet.notice "Stopping #{instance_id} ... Done"
+      return result
+    end
+
     def create_connection(options = {})
       # We don't support more than AWS, but this satisfies the rspec tests
       # that pass in a provider string that does not match 'AWS'.  This makes
