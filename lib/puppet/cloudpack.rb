@@ -454,7 +454,7 @@ module Puppet::CloudPack
       end
     end
 
-    def create(options)
+    def create(options, returnobject = false)
       options = merge_default_options(options)
       unless options.has_key? :_destroy_server_at_exit
         options[:_destroy_server_at_exit] = :create
@@ -511,6 +511,7 @@ module Puppet::CloudPack
         options.delete(:_destroy_server_at_exit)
       end
 
+      return server if returnobject == true
       return server.dns_name
     end
 

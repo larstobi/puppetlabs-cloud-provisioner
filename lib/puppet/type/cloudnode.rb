@@ -41,6 +41,28 @@ Puppet::Type.newtype(:cloudnode) do
         end
     end
 
+    newparam(:username) do
+        desc "The username to use when logging in via SSH."
+    end
+
+    newparam(:commands) do
+        desc "Bootstrapping commands to run via SSH."
+
+        munge do |value|
+            if value.is_a?(String)
+                Array(value)
+            else
+                value
+            end
+        end
+    end
+
+    newparam(:logoutput, :boolean => true) do
+        desc "Whether to log output from bootstrap."
+        newvalues(:true, :false)
+        defaultto :false
+    end
+
     newparam(:tags) do
         desc "Tag the instance."
         defaultto Hash.new
